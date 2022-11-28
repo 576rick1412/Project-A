@@ -70,13 +70,13 @@ public class GameManager : MonoBehaviour
         public int Now_Level;           // 현재 레벨
         public int Max_Score;           // 최대 점수
 
-        public float Combine_Speed;       // 카드 섞는 속도
+        public float Combine_Speed;      // 카드 섞는 속도
         public int Combine_times;       // 카트 섞는 횟수
     } // 메인 데이터
     void Start()
     {
-        LoadData(); // 저장된 정보 불러오기
-        StartCoroutine(AutoSave(Data.Interval_AutoSave)); // 자동저장
+        //LoadData(); // 저장된 정보 불러오기
+        //StartCoroutine(AutoSave(Data.Interval_AutoSave)); // 자동저장
     }
 
     void Update()
