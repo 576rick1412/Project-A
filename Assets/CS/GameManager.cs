@@ -51,7 +51,7 @@ public class GameManager : MonoBehaviour
             Now_Level = 1,
             Max_Score = 0,
 
-            Combine_Speed = 1f,
+            Combine_Speed = 0.5f,
             Combine_times = 5
         };
 
@@ -75,8 +75,12 @@ public class GameManager : MonoBehaviour
     } // 메인 데이터
     void Start()
     {
-        //LoadData(); // 저장된 정보 불러오기
-        //StartCoroutine(AutoSave(Data.Interval_AutoSave)); // 자동저장
+        LoadData(); // 저장된 정보 불러오기
+        StartCoroutine(AutoSave(Data.Interval_AutoSave)); // 자동저장
+
+        Data.Now_Level = 1;
+        Data.Combine_Speed = 0.5f;
+        Data.Combine_times = 5;
     }
 
     void Update()

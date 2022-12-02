@@ -2,95 +2,161 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using TMPro;
 
 public class GameControl : MonoBehaviour
 {
-    [SerializeField] GameObject[] Card;
+    [SerializeField] GameObject Panel;
+    bool OnPanel = true;   // 참 : 활성화 / 거짓 : 비활성화
+
+    [SerializeField] TextMeshProUGUI Round_Text;
+
+    public Vector3[] Card_Pos;
 
     [System.Serializable]
     struct Card_Info
     {
-        public Vector3 Card_Pos;      // 카드 위치값
-        public bool Card_Check;       // 참이면 앞면, 거짓이면 뒷면
+        public GameObject Card;
+        public bool Joker;
     } // 카드 구조체
 
     [SerializeField] Card_Info[] card_Info;
+    [SerializeField] Card_Info Temp_Info;
 
-    [SerializeField] float RotationSpeed;   // 카드 회전 속도
-    [SerializeField] bool  NextRound = true;     // 다음 라운드로 이동 / 참 : 동작 , 거짓 : 중단
-    [SerializeField] bool Combineing = true;     // 카드 섞는 중
-    [SerializeField]int  Combine_num = 0;       // 카드 섞은 횟수
+    [SerializeField] bool  NextRound = false;   // 다음 라운드로 이동 / 참 : 동작 , 거짓 : 중단
+    [SerializeField] bool Combineing =  true;   // 카드 섞는 중
+
+    float RotationSpeed;                        // 카드 회전 속도
+    [SerializeField] int   Combine_num = 0;     // 카드 섞은 횟수
 
     void Start()
     {
+        // 게임 내 수치 초기화
+        RotationSpeed = GameManager.GM.Data.Combine_Speed;
+
+
         Init_Struct(true); // 카드 초기화
-        StartCoroutine(Rotation_Card(true));
+        StartCoroutine(Rotation_Card(false));
     }
 
     void Update()
     {
-        Combine();
+        GameLoop();
     }
-    void Combine()
+
+    void GameLoop()
     {
+        Panel.SetActive(OnPanel); // 화면 판넬
+
         if (!NextRound) return; // 다음 라운드가 거짓일 때 리턴
 
         int Combine_times = GameManager.GM.Data.Combine_times;
-        if (Combine_num < Combine_times && Combineing)
+        if (Combine_num < Combine_times && Combineing && NextRound)
         {
-            int a = Random.Range(0, Card.Length);
-            int b = Random.Range(0, Card.Length);
-            while (a == b) b = Random.Range(0, Card.Length); // 중복 검사
+            int a = Random.Range(0, card_Info.Length);
+            int b = Random.Range(0, card_Info.Length);
+            while (a == b) b = Random.Range(0, card_Info.Length); // 중복 검사
 
             StartCoroutine(Combine_Card(a, b));
         }
 
         // 카드 선택 때까지 섞기 중단
-        if (Combine_num >= Combine_times && Combineing) NextRound = false;
+        if (Combine_num >= Combine_times && Combineing) { NextRound = false; OnPanel = false; } // 화면 판넬 비활성화
         
     } // 카드 섞기 시작
 
     IEnumerator Rotation_Card(bool Side)
     {
+        yield return new WaitForSeconds(1f); // 시작 시 잠깐 대기
+
         // Side가 거짓일 때 앞면 -> 뒷면 / Side가 참일 때 뒷면 -> 앞면
         Vector3 Vec = Side == false ? new Vector3(0f, 180f, 0f) : new Vector3(0f, 0f, 0f);
 
-        for (int i = 0; i < Card.Length;i++)
+        for (int i = 0; i < card_Info.Length;i++)
         {
-            Card[i].transform.DORotate(Vec, RotationSpeed).SetEase(Ease.InOutQuad);
+            card_Info[i].Card.transform.DORotate(Vec, RotationSpeed).SetEase(Ease.InOutQuad);
             yield return new WaitForSeconds(0.2f);
         }
-        NextRound = true; // 다음 라운드로 돌아가도록 참으로 변경
-        yield return null;
+
+        if (!Side) NextRound = true; // 다음 라운드로 돌아가도록 참으로 변경 
+        yield return new WaitForSeconds(0.2f);
     } // 카드 회전
 
     IEnumerator Combine_Card(int Card_1,int Card_2)
     {
-        //yield return new WaitForSeconds(RotationSpeed * 4);
-
         Combineing = false; // if 문이 돌아가지 않도록 거짓으로 변경
         // 카드 이동
         float Combine_Speed = GameManager.GM.Data.Combine_Speed;
-        Card[Card_1].transform.DOMove(card_Info[Card_2].Card_Pos, Combine_Speed);
-        Card[Card_2].transform.DOMove(card_Info[Card_1].Card_Pos, Combine_Speed);
+        card_Info[Card_1].Card.transform.DOMove(Card_Pos[Card_2], Combine_Speed);
+        card_Info[Card_2].Card.transform.DOMove(Card_Pos[Card_1], Combine_Speed);
         yield return new WaitForSeconds(Combine_Speed * 2);
 
         // 카드 위치 교환
-        GameObject Temp = Card[Card_1];
-        Card[Card_1]    = Card[Card_2];
-        Card[Card_2]    = Temp;
+        Temp_Info =      card_Info[Card_1];
+        card_Info[Card_1] = card_Info[Card_2];
+        card_Info[Card_2] = Temp_Info;
 
         Init_Struct(false);
 
         Combineing = true; // if 문이 돌아가도록 참으로 변경
         Combine_num++; // 섞은 횟수 1 추가
+        
         yield return null;
     } // 카드 섞기 코루틴
 
     void Init_Struct(bool Init)
     {
         // Init 가 참일 떄 배열 크기 늘어남
-        if (Init) System.Array.Resize(ref card_Info, card_Info.Length + Card.Length);
-        for (int i = 0; i < Card.Length; i++) card_Info[i].Card_Pos = Card[i].transform.position;
+        if (Init) System.Array.Resize(ref Card_Pos, Card_Pos.Length + card_Info.Length);
+        for (int i = 0; i < card_Info.Length; i++) Card_Pos[i] = card_Info[i].Card.transform.position;
     } // 카드 초기화 / 구조체 초기화 ( 카드가 섞일 때 재정렬 하기 위함 )
+
+
+    public void Call_Button(int Card_Num) { StartCoroutine(Card_Button(Card_Num)); }
+    IEnumerator Card_Button(int Card_Num)
+    {
+        // Side가 거짓일 때 앞면 -> 뒷면 / Side가 참일 때 뒷면 -> 앞면
+        Vector3 Vec_front = new Vector3(0f, 180f, 0f);
+        Vector3 Vec_back  = new Vector3(0f, 0f, 0f);
+
+        card_Info[Card_Num].Card.transform.DORotate(Vec_front, RotationSpeed).SetEase(Ease.InOutQuad);
+
+        // 카드를 맞췄을 때
+        if (card_Info[Card_Num].Joker)
+        {
+            Uptate_Data(); // 데이터 업데이트 함수
+            yield return new WaitForSeconds(0.5f);
+            card_Info[Card_Num].Card.transform.DORotate(Vec_back, RotationSpeed).SetEase(Ease.InOutQuad);
+            Round_Text.text = "Round : " + GameManager.GM.Data.Now_Level; // 점수 텍스트 업데이트
+
+            StartCoroutine(Rotation_Card(true));
+            yield return new WaitForSeconds(1f);
+            StartCoroutine(Rotation_Card(false));
+            yield return new WaitForSeconds(0.5f);
+
+        }
+
+        else
+        {
+            Debug.Log("게임 오버");
+        }
+
+        GameManager.GM.SavaData();
+        yield return null;
+    }
+
+    void Uptate_Data()
+    {
+        // 수치 초기화 및 다음 라운드 준비
+        GameManager.GM.Data.Now_Level++; // 라운드 횟수 추가
+
+        // 최고점 달성 시 최고점 기록 업데이트
+        if (GameManager.GM.Data.Now_Level > GameManager.GM.Data.Max_Score) 
+            GameManager.GM.Data.Max_Score = GameManager.GM.Data.Now_Level;
+
+        GameManager.GM.Data.Combine_Speed *= 0.9f; // 섞는 속도 점점 증가
+        GameManager.GM.Data.Combine_times += 2;    // 섞는 횟수 점점 증가
+        Combine_num = 0; // 다시 섞일 수 있게 0으로 초기화
+        OnPanel = true; // 화면 판넬 활성화
+    }
 }
