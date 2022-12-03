@@ -771,7 +771,7 @@ GameObject:
   - component: {fileID: 717491204}
   m_Layer: 0
   m_Name: Card_1
-  m_TagString: Untagged
+  m_TagString: Card
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -995,7 +995,7 @@ GameObject:
   - component: {fileID: 1178372790}
   m_Layer: 0
   m_Name: Card_2
-  m_TagString: Untagged
+  m_TagString: Card
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1076,11 +1076,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Data:
     key: 6dgs8h4123fgdhdfg86763af8sg321fhd
-    Interval_AutoSave: 10
-    Now_Level: 1
     Max_Score: 0
-    Combine_Speed: 0.1
-    Combine_times: 5
+  Interval_AutoSave: 0
+  Now_Level: 0
+  RotationSpeed: 0
+  Combine_Speed: 0
+  Combine_times: 0
 --- !u!114 &1213314381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1691,7 +1692,7 @@ GameObject:
   - component: {fileID: 1638604946}
   m_Layer: 0
   m_Name: Card_0
-  m_TagString: Untagged
+  m_TagString: Card
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

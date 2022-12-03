@@ -15,13 +15,39 @@ public class GameManager : MonoBehaviour
     public MainDB Data;
     string FilePath;
 
+    public int Interval_AutoSave;   // 자동 저장 간격
+    public int Now_Level;           // 현재 레벨
+
+
+    public float RotationSpeed;     // 카드 회전 속도
+    public float Combine_Speed;     // 카드 섞는 속도
+    public int Combine_times;       // 카트 섞는 횟수
+
     void Awake() 
     { 
         GM = this;
-
         Application.targetFrameRate = 60;
         FilePath = Application.persistentDataPath + "/MainDB.txt"; Debug.Log(FilePath);
+
+        LoadData();
+        {
+            RotationSpeed = Data.Set_RotationSpeed;
+            Combine_Speed = Data.Set_Combine_Speed;
+            Combine_times = Data.Set_Combine_times;
+        } // 인게임 수치 초기화
+        SavaData();
+        // 데이터 불러온 후 초기화하고 다시 저장
     }
+    void Start()
+    {
+        StartCoroutine(AutoSave(Interval_AutoSave)); // 자동저장
+    }
+
+    void Update()
+    {
+
+    }
+
     IEnumerator AutoSave(int Wait_Time) { for (; ; ) { SavaData(); yield return new WaitForSeconds(Wait_Time); } }
 
     public void SavaData()
@@ -46,13 +72,11 @@ public class GameManager : MonoBehaviour
     {
         Data = new MainDB
         {
-            Interval_AutoSave = 10,
-
-            Now_Level = 1,
-            Max_Score = 0,
-
-            Combine_Speed = 0.5f,
-            Combine_times = 5
+            Max_Score =         0,
+            Set_HP =            3,
+            Set_RotationSpeed = 0.2f,
+            Set_Combine_Speed = 0.5f,
+            Set_Combine_times = 5
         };
 
         SavaData();
@@ -65,28 +89,13 @@ public class GameManager : MonoBehaviour
         // AES 암호화 키
         [HideInInspector] public string key = "6dgs8h4123fgdhdfg86763af8sg321fhd";
 
-        public int Interval_AutoSave;   // 자동 저장 간격
-
-        public int Now_Level;           // 현재 레벨
         public int Max_Score;           // 최대 점수
 
-        public float Combine_Speed;      // 카드 섞는 속도
-        public int Combine_times;       // 카트 섞는 횟수
+        public int      Set_HP;             // 플레이어 체력
+        public float    Set_RotationSpeed;  // 카드 회전 속도 저장
+        public float    Set_Combine_Speed;  // 카드 섞는 속도 저장
+        public int      Set_Combine_times;  // 카트 섞는 횟수 저장
     } // 메인 데이터
-    void Start()
-    {
-        LoadData(); // 저장된 정보 불러오기
-        StartCoroutine(AutoSave(Data.Interval_AutoSave)); // 자동저장
-
-        Data.Now_Level = 1;
-        Data.Combine_Speed = 0.5f;
-        Data.Combine_times = 5;
-    }
-
-    void Update()
-    {
-        
-    }
 }
 
 namespace AESWithJava.Con
