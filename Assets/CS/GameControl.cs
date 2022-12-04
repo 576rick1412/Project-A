@@ -80,16 +80,28 @@ public class GameControl : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            var Ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            Debug.DrawRay(Ray.origin, Ray.direction * 10, Color.red, 0.2f);
+            RaycastHit2D hit = Physics2D.Raycast(Ray.origin, Ray.direction, 1000);
+
+            if (hit)
             {
-                if(gameObject.CompareTag("Card"))
+                if(hit.collider.CompareTag("Card") && !OnPanel)
                 {
-                    Debug.Log("힛");
+                    GameObject ONJ = hit.collider.gameObject;
+
+
+                    for (int i = 0; i < card_Info.Length; i++)
+                    {
+                        if (ONJ == card_Info[i].Card) 
+                        { 
+                            Debug.Log("카드번호 : " + i);
+                            StartCoroutine(Card_Button(i));
+                        }
+                    }
                 }
             }
-            Debug.DrawRay(ray.origin, ray.direction * 50, Color.red, 0.3f);
+
         }
     }
 
@@ -181,7 +193,6 @@ public class GameControl : MonoBehaviour
         GameManager.GM.SavaData();
         yield return null;
     }
-
     void Uptate_Data()
     {
         // 수치 초기화 및 다음 라운드 준비
