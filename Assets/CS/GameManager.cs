@@ -23,6 +23,8 @@ public class GameManager : MonoBehaviour
     public float Combine_Speed;     // 카드 섞는 속도
     public int Combine_times;       // 카트 섞는 횟수
 
+    public int[] Card_Type_Num = new int[5];    // 카드 아이템 번호
+
     void Awake() 
     { 
         GM = this;
