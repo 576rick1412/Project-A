@@ -7,7 +7,8 @@ using TMPro;
 public class GameControl : MonoBehaviour
 {
     [SerializeField] int Player_HP;
-    bool OnPanel = true; // 판넬 ON / OFF 관리 /  참 : 활성화 / 거짓 : 비활성화
+    bool ZeroHP_UI = true;  // HP가 0일 때 UI를 실행하기 위함
+    bool OnPanel = true;    // 판넬 ON / OFF 관리 /  참 : 활성화 / 거짓 : 비활성화
 
     [HideInInspector] public Vector3[] Card_Pos; // 카드 위치값
     [HideInInspector] public GameObject[] Card = new GameObject[5]; // 카드 오브젝트
@@ -61,6 +62,8 @@ public class GameControl : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetMouseButtonDown(0)) Item_Setting();
+
         GameLoop();
         Cast();
         Update_UI();
@@ -106,8 +109,6 @@ public class GameControl : MonoBehaviour
                 if(hit.collider.CompareTag("Card") && !OnPanel)
                 {
                     GameObject ONJ = hit.collider.gameObject;
-
-
                     for (int i = 0; i < Card.Length; i++)
                     {
                         if (ONJ == Card[i]) 
@@ -123,6 +124,8 @@ public class GameControl : MonoBehaviour
     }       // 레이캐스트
     void Update_UI()
     {
+        if (Player_HP <= 0 && ZeroHP_UI) { ZeroHP_UI = false; return; }     // 체력이 0일 경우, 실행 중단
+
         Round_Text.text = "Round : " + GameManager.GM.Now_Level;                        // 점수 텍스트 업데이트
         Combine_Times.text = "" + Combine_num + " / " + GameManager.GM.Combine_times;   // 섞은 횟수 표시
         for (int i = 2; i > Player_HP - 1; i--) Life_Star[i].SetActive(false);          // HP 표시
@@ -148,6 +151,8 @@ public class GameControl : MonoBehaviour
     IEnumerator Combine_Card(int Card_1,int Card_2)
     {
         Combineing = false; // if 문이 돌아가지 않도록 거짓으로 변경
+        Combine_num++; // 섞은 횟수 1 추가
+
         // 카드 이동
         float Combine_Speed = GameManager.GM.Combine_Speed;
         Card[Card_1].transform.DOMove(Card_Pos[Card_2], Combine_Speed);
@@ -162,8 +167,6 @@ public class GameControl : MonoBehaviour
         Init_Struct(false);
 
         Combineing = true; // if 문이 돌아가도록 참으로 변경
-        Combine_num++; // 섞은 횟수 1 추가
-        
         yield return null;
     } // 카드 섞기 코루틴
     IEnumerator Card_Button(int Card_Num)
@@ -177,25 +180,28 @@ public class GameControl : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         Card[Card_Num].transform.DORotate(Vec_back, RotationSpeed).SetEase(Ease.InOutQuad);
 
+        bool Round =  Item_Check(Card_Num); // 아이템 판정 이후 , 라운드 넘어감 판정
+        yield return new WaitForSeconds(0.5f);
+
         StartCoroutine(Rotation_Card(true));
         yield return new WaitForSeconds(1f);
 
-        Item_Check(Card_Num); // 아이템 판정 이후 , 라운드 넘어감 판정
-        yield return new WaitForSeconds(0.5f);
+        // 다음 라운드로 넘어간다면, 다시 모든 카드 뒤집기
+        if (Round) StartCoroutine(Rotation_Card(false));
 
         GameManager.GM.SavaData();
         yield return null;
     }
 
-    void Item_Check(int Card_Num)
+    bool Item_Check(int Card_Num)
     {
         bool Round;
         int Card_Type = GameManager.GM.Card_Type_Num[Card_Num];
 
-
         switch (Card_Type)
         {
             case 0:                         // 폭탄
+
                 break;
             case 1:                         // 즉사
                 Player_HP = 0;
@@ -203,35 +209,54 @@ public class GameControl : MonoBehaviour
 
 
             case 2:                         // 섞는 횟수 증가
+
                 break;
             case 3:                         // 섞는 횟수 감소
+
                 break;
 
 
             case 4:                         // 섞는 속도 증가
+
                 break;
             case 5:                         // 섞는 속도 감소 
+
                 break;
 
 
             case 6:                         // HP 1 회복
+
                 ; break;
+
             case 7:                         // 특수 아이템 , 카드 1회 돌려기
+
                 break;
         }
 
         // 게임 결과 판정
-        if (Card_Type != 0 || Card_Type != 1) { Round = true; Debug.Log("정답!!!!"); }
-        else { Round = false; Debug.Log("카드 틀림"); }
+        if (Card_Type == 0) { Round = false; Debug.Log("폭탄 카드!"); goto A; } // 아래 A 로 넘김
+        if (Card_Type == 1) { Round = false; Debug.Log("즉사 카드!"); goto A; } // 아래 A 로 넘김
+        Round = true; Debug.Log("카드 넘김");
 
-
+        // ====================================================================
+        A: // 게임 결과 판정에서 여기로 이동됨
         // 카드를 틀렸으나 HP가 남아있을 때, HP를 차감하고 다음 라운드로 넘어감 / 아니면 게임 오버
-        if (!Round && Player_HP > 1) { Player_HP--; Round = true; }
-        else if (!Round && Player_HP <= 1) Debug.Log("게임 오버");
+        if (!Round && Player_HP > 1) {  Round = true; Player_HP--; }
+        else if (!Round && Player_HP <= 1) { Debug.Log("게임 오버"); if(Player_HP > 0) Player_HP--; }
 
-        // 다음 라운드로 넘어간다면, 다시 모든 카드 뒤집기
-        if (Round) StartCoroutine(Rotation_Card(false));
-
+        return Round;
+    }
+    void Item_Setting()
+    {
+        // 아이템 세팅 , 폭탄( 0 )은 시작부터, 즉사( 1 )은 15라운드 부터
+        for (int i = 0; i < 5; i++)
+        {
+            for (int j = 0; j < i; j++)
+            {
+                while (GameManager.GM.Card_Type_Num[i] == GameManager.GM.Card_Type_Num[j])
+                    GameManager.GM.Card_Type_Num[j] = Random.Range(0, 8);
+            }
+        }
     }
 
     void Uptate_Data()
