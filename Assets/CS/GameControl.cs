@@ -24,6 +24,7 @@ public class GameControl : MonoBehaviour
     GameObject Panel;                                   // 화면 가림판
     [SerializeField] TextMeshProUGUI Round_Text;        // 현재 라운드 표시
     [SerializeField] TextMeshProUGUI Combine_Times;     // 남은 섞는 횟수 표시
+    [SerializeField] TextMeshProUGUI Combine_Speed;     // 섞는 속도 표시
     [HideInInspector] public GameObject[] Life_Star = new GameObject[3];
 
     void Start()
@@ -40,7 +41,7 @@ public class GameControl : MonoBehaviour
             RotationSpeed = GameManager.GM.RotationSpeed;
 
             Panel = GameObject.Find("All_Border");
-
+ 
             {
                 Life_Star[0] = GameObject.Find("Heart_0");
                 Life_Star[1] = GameObject.Find("Heart_1");
@@ -56,14 +57,13 @@ public class GameControl : MonoBehaviour
 
         } // 인게임 수치 초기화
 
-        Init_Struct(true); // 카드 초기화
+        Init_Struct(true);  // 카드 초기화
+        Item_Setting();     // 카드 내 아이템 초기화
         StartCoroutine(Rotation_Card(false));
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0)) Item_Setting();
-
         GameLoop();
         Cast();
         Update_UI();
@@ -124,10 +124,11 @@ public class GameControl : MonoBehaviour
     }       // 레이캐스트
     void Update_UI()
     {
-        if (Player_HP <= 0 && ZeroHP_UI) { ZeroHP_UI = false; return; }     // 체력이 0일 경우, 실행 중단
+        if (Player_HP <= 0 && ZeroHP_UI) { ZeroHP_UI = false; return; }                 // 체력이 0일 경우, 실행 중단
 
         Round_Text.text = "Round : " + GameManager.GM.Now_Level;                        // 점수 텍스트 업데이트
         Combine_Times.text = "" + Combine_num + " / " + GameManager.GM.Combine_times;   // 섞은 횟수 표시
+        Combine_Speed.text = "" +  GameManager.GM.Combine_Speed;                        // 섞은 횟수 표시
         for (int i = 2; i > Player_HP - 1; i--) Life_Star[i].SetActive(false);          // HP 표시
     }  // UI 업데이트
 
@@ -145,9 +146,9 @@ public class GameControl : MonoBehaviour
             yield return new WaitForSeconds(0.2f);
         }
 
-        if (!Side) NextRound = true; // 다음 라운드로 돌아가도록 참으로 변경 
+        if (!Side) NextRound = true; // 다음 라운드로 돌아가도록 참으로 변경
         yield return new WaitForSeconds(0.2f);
-    } // 카드 회전
+    }               // 카드 회전
     IEnumerator Combine_Card(int Card_1,int Card_2)
     {
         Combineing = false; // if 문이 돌아가지 않도록 거짓으로 변경
@@ -168,8 +169,8 @@ public class GameControl : MonoBehaviour
 
         Combineing = true; // if 문이 돌아가도록 참으로 변경
         yield return null;
-    } // 카드 섞기 코루틴
-    IEnumerator Card_Button(int Card_Num)
+    }   // 카드 섞기 코루틴
+    IEnumerator Card_Button(int Card_Num)               // 카드 선택
     {
         // Side가 거짓일 때 앞면 -> 뒷면 / Side가 참일 때 뒷면 -> 앞면
         Vector3 Vec_front = new Vector3(0f, 180f, 0f);
@@ -189,9 +190,13 @@ public class GameControl : MonoBehaviour
         // 다음 라운드로 넘어간다면, 다시 모든 카드 뒤집기
         if (Round) StartCoroutine(Rotation_Card(false));
 
+        yield return new WaitForSeconds(2f); // 모든 카드가 뒤집힌 후 카드가 돌아가도록
+        Range_Support(Card_Num); // 아이템 변경
+
         GameManager.GM.SavaData();
         yield return null;
     }
+
 
     bool Item_Check(int Card_Num)
     {
@@ -201,41 +206,51 @@ public class GameControl : MonoBehaviour
         switch (Card_Type)
         {
             case 0:                         // 폭탄
-
+                Debug.Log("폭탄");
                 break;
             case 1:                         // 즉사
                 Player_HP = 0;
+                Debug.Log("즉사");
                 break;
 
 
             case 2:                         // 섞는 횟수 증가
-
+                // 최대 횟수 20
+                if (GameManager.GM.Combine_times < 19) GameManager.GM.Combine_times += 2;
+                Debug.Log("섞는 횟수 증가");
                 break;
             case 3:                         // 섞는 횟수 감소
-
+                // 최소 횟수 6
+                if(GameManager.GM.Combine_times > 6) GameManager.GM.Combine_times -= 1;
+                Debug.Log("섞는 횟수 감소");
                 break;
 
 
             case 4:                         // 섞는 속도 증가
-
+                // 최소 속도 : 0.1  
+                if (GameManager.GM.Combine_Speed > 0.1f) GameManager.GM.Combine_Speed -= 0.1f;
+                Debug.Log("섞는 속도 증가");
                 break;
-            case 5:                         // 섞는 속도 감소 
 
+            case 5:                         // 섞는 속도 감소 
+                // 최대 속도: 0.6
+                if (GameManager.GM.Combine_Speed < 0.6f) GameManager.GM.Combine_Speed += 0.1f;
+                Debug.Log("섞는 속도 감소");
                 break;
 
 
             case 6:                         // HP 1 회복
+                if(Player_HP < 3) Player_HP++;
+                Debug.Log("HP 1 회복");
+                break;
 
-                ; break;
-
-            case 7:                         // 특수 아이템 , 카드 1회 돌려기
-
+            case 7:                         // 특수 아이템 , 카드 1회 돌려보기
+                Debug.Log("카드 돌려봄");
                 break;
         }
 
         // 게임 결과 판정
-        if (Card_Type == 0) { Round = false; Debug.Log("폭탄 카드!"); goto A; } // 아래 A 로 넘김
-        if (Card_Type == 1) { Round = false; Debug.Log("즉사 카드!"); goto A; } // 아래 A 로 넘김
+        if (Card_Type == 0 || Card_Type == 1) { Round = false; goto A; } // 아래 A 로 넘김
         Round = true; Debug.Log("카드 넘김");
 
         // ====================================================================
@@ -245,19 +260,52 @@ public class GameControl : MonoBehaviour
         else if (!Round && Player_HP <= 1) { Debug.Log("게임 오버"); if(Player_HP > 0) Player_HP--; }
 
         return Round;
-    }
+    }     // 카드 선택 시 아이템 효과 적용
     void Item_Setting()
     {
-        // 아이템 세팅 , 폭탄( 0 )은 시작부터, 즉사( 1 )은 15라운드 부터
+        for (int i = 0; i < 5; i++) GameManager.GM.Card_Type_Num[i] = Random.Range(0, 8); // 아이템에 난수 넣기
+        for (int i = 0; i < 5; i++) Range_Support(i);   // 중복검사
+
+        {
+            /*
+            // 아이템 세팅 , 폭탄( 0 )은 시작부터, 즉사( 1 )은 15라운드 부터
+            GameManager.GM.Card_Type_Num[0] = Random.Range(0, 8);
+            GameManager.GM.Card_Type_Num[1] = Random.Range(0, 8);
+
+            while(GameManager.GM.Card_Type_Num[0] == GameManager.GM.Card_Type_Num[1])
+                GameManager.GM.Card_Type_Num[1] = Random.Range(0, 8);
+
+            GameManager.GM.Card_Type_Num[2] = Random.Range(0, 8);
+            while (GameManager.GM.Card_Type_Num[0] == GameManager.GM.Card_Type_Num[2] 
+                || GameManager.GM.Card_Type_Num[1] == GameManager.GM.Card_Type_Num[2])
+                GameManager.GM.Card_Type_Num[2] = Random.Range(0, 8);
+
+            GameManager.GM.Card_Type_Num[3] = Random.Range(0, 8);
+            while (GameManager.GM.Card_Type_Num[0] == GameManager.GM.Card_Type_Num[3]
+        || GameManager.GM.Card_Type_Num[1] == GameManager.GM.Card_Type_Num[3]
+        || GameManager.GM.Card_Type_Num[2] == GameManager.GM.Card_Type_Num[3])
+                GameManager.GM.Card_Type_Num[3] = Random.Range(0, 8);
+
+            GameManager.GM.Card_Type_Num[4] = Random.Range(0, 8);
+            while (GameManager.GM.Card_Type_Num[0] == GameManager.GM.Card_Type_Num[4]
+        || GameManager.GM.Card_Type_Num[1] == GameManager.GM.Card_Type_Num[4]
+        || GameManager.GM.Card_Type_Num[2] == GameManager.GM.Card_Type_Num[4]
+        || GameManager.GM.Card_Type_Num[3] == GameManager.GM.Card_Type_Num[4])
+                GameManager.GM.Card_Type_Num[4] = Random.Range(0, 8);
+            */
+        } // 초기형 노가다 중복검사기
+    }               // 아이템 초기화
+    void Range_Support(int Num)
+    {
         for (int i = 0; i < 5; i++)
         {
-            for (int j = 0; j < i; j++)
-            {
-                while (GameManager.GM.Card_Type_Num[i] == GameManager.GM.Card_Type_Num[j])
-                    GameManager.GM.Card_Type_Num[j] = Random.Range(0, 8);
-            }
+            if (Num == i) return;
+
+            while (GameManager.GM.Card_Type_Num[i] == GameManager.GM.Card_Type_Num[Num])
+                GameManager.GM.Card_Type_Num[Num] = Random.Range(0, 8);
         }
-    }
+    }       // 아이템 중복 검사기
+
 
     void Uptate_Data()
     {
@@ -269,8 +317,8 @@ public class GameControl : MonoBehaviour
             GameManager.GM.Data.Max_Score = GameManager.GM.Now_Level;
 
         // 섞는 속도가 0.08초를 넘어가면, 카드 섞는 횟수를 증가시키는 걸로 대체 / 너무 빨라서 섞는게 안 보임
-        if (GameManager.GM.Combine_Speed >= 0.12f) GameManager.GM.Combine_Speed *= 0.85f; // 섞는 속도 점점 증가
-        else { GameManager.GM.Combine_Speed = 0.1f; GameManager.GM.Combine_times += 2; }  // 섞는 횟수 점점 증가
+        // if (GameManager.GM.Combine_Speed >= 0.12f) GameManager.GM.Combine_Speed *= 0.85f; // 섞는 속도 점점 증가
+        //else { GameManager.GM.Combine_Speed = 0.1f; GameManager.GM.Combine_times += 2; }  // 섞는 횟수 점점 증가
 
         Combine_num = 0; // 다시 섞일 수 있게 0으로 초기화
         OnPanel = true; // 화면 판넬 활성화

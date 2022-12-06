@@ -9,7 +9,7 @@ public class Card_Proto : MonoBehaviour
 
     void Update()
     {
-        /*
+        
         switch(GameManager.GM.Card_Type_Num[Type_Num])
         {
             case 0 : break;
@@ -19,7 +19,7 @@ public class Card_Proto : MonoBehaviour
             case 4 : break;
             case 5 : break;
             case 6 : break;
+            case 7 : break;
         }
-        */
     }
 }
