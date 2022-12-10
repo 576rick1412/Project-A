@@ -11,7 +11,11 @@ public class GameControl : MonoBehaviour
     bool OnPanel = true;    // 판넬 ON / OFF 관리 /  참 : 활성화 / 거짓 : 비활성화
 
     [HideInInspector] public Vector3[] Card_Pos; // 카드 위치값
+
+    // 카드가 섞으면서 카드 번호도 섞이기 때문에, 원본 카드 저장
+    [HideInInspector] public GameObject[] Const_Card = new GameObject[5]; // 카드 원본 오브젝트
     [HideInInspector] public GameObject[] Card = new GameObject[5]; // 카드 오브젝트
+
     GameObject TempCard;        // 교환용 임시 카드
 
     bool NextRound = false;     // 다음 라운드로 이동 / 참 : 동작 , 거짓 : 중단
@@ -48,14 +52,14 @@ public class GameControl : MonoBehaviour
                 Life_Star[2] = GameObject.Find("Heart_2");
             } // HP 오브젝트 초기화
             {
-                Card[0] = GameObject.Find("Card_0");
-                Card[1] = GameObject.Find("Card_1");
-                Card[2] = GameObject.Find("Card_2");
-                Card[3] = GameObject.Find("Card_3");
-                Card[4] = GameObject.Find("Card_4");
+                Const_Card[0] = Card[0] = GameObject.Find("Card_0");
+                Const_Card[1] = Card[1] = GameObject.Find("Card_1");
+                Const_Card[2] = Card[2] = GameObject.Find("Card_2");
+                Const_Card[3] = Card[3] = GameObject.Find("Card_3");
+                Const_Card[4] = Card[4] = GameObject.Find("Card_4");
             } // 카드 오브젝트 초기화
 
-        } // 인게임 수치 초기화
+        } // 인게임 요소 초기화
 
         Init_Struct(true);  // 카드 초기화
         Item_Setting();     // 카드 내 아이템 초기화
@@ -109,9 +113,9 @@ public class GameControl : MonoBehaviour
                 if(hit.collider.CompareTag("Card") && !OnPanel)
                 {
                     GameObject ONJ = hit.collider.gameObject;
-                    for (int i = 0; i < Card.Length; i++)
+                    for (int i = 0; i < Const_Card.Length; i++)
                     {
-                        if (ONJ == Card[i]) 
+                        if (ONJ == Const_Card[i])
                         { 
                             Debug.Log("카드번호 : " + i);
                             StartCoroutine(Card_Button(i));
@@ -170,16 +174,16 @@ public class GameControl : MonoBehaviour
         Combineing = true; // if 문이 돌아가도록 참으로 변경
         yield return null;
     }   // 카드 섞기 코루틴
-    IEnumerator Card_Button(int Card_Num)               // 카드 선택
+    IEnumerator Card_Button(int Card_Num)
     {
         // Side가 거짓일 때 앞면 -> 뒷면 / Side가 참일 때 뒷면 -> 앞면
         Vector3 Vec_front = new Vector3(0f, 180f, 0f);
         Vector3 Vec_back = new Vector3(0f, 0f, 0f);
-        Card[Card_Num].transform.DORotate(Vec_front, RotationSpeed * 2).SetEase(Ease.InOutQuad);
+        Const_Card[Card_Num].transform.DORotate(Vec_front, RotationSpeed * 2).SetEase(Ease.InOutQuad);
 
         Uptate_Data(); // 데이터 업데이트 함수
         yield return new WaitForSeconds(0.5f);
-        Card[Card_Num].transform.DORotate(Vec_back, RotationSpeed).SetEase(Ease.InOutQuad);
+        Const_Card[Card_Num].transform.DORotate(Vec_back, RotationSpeed).SetEase(Ease.InOutQuad);
 
         bool Round =  Item_Check(Card_Num); // 아이템 판정 이후 , 라운드 넘어감 판정
         yield return new WaitForSeconds(0.5f);
@@ -191,12 +195,13 @@ public class GameControl : MonoBehaviour
         if (Round) StartCoroutine(Rotation_Card(false));
 
         yield return new WaitForSeconds(2f); // 모든 카드가 뒤집힌 후 카드가 돌아가도록
-        Range_Support(Card_Num); // 아이템 변경
+
+        GameManager.GM.Card_Type_Num[Card_Num] = Random.Range(0, 8);
+        Range_Support(Card_Num); // 아이템 중복 검사
 
         GameManager.GM.SavaData();
         yield return null;
-    }
-
+    }  // 카드 선택
 
     bool Item_Check(int Card_Num)
     {
@@ -241,17 +246,18 @@ public class GameControl : MonoBehaviour
 
             case 6:                         // HP 1 회복
                 if(Player_HP < 3) Player_HP++;
+                for (int i = 0; i < Player_HP; i++) Life_Star[i].SetActive(true); // 따로 활성화하는 기능이 없어서....일단 전부 켜기
                 Debug.Log("HP 1 회복");
                 break;
 
-            case 7:                         // 특수 아이템 , 카드 1회 돌려보기
-                Debug.Log("카드 돌려봄");
+            case 7:                         // 특수 아이템 , 카드 1회 돌려보기?
+                Debug.Log("특수 카드");
                 break;
         }
 
         // 게임 결과 판정
         if (Card_Type == 0 || Card_Type == 1) { Round = false; goto A; } // 아래 A 로 넘김
-        Round = true; Debug.Log("카드 넘김");
+        Round = true; // Debug.Log("카드 넘김");
 
         // ====================================================================
         A: // 게임 결과 판정에서 여기로 이동됨
@@ -299,7 +305,7 @@ public class GameControl : MonoBehaviour
     {
         for (int i = 0; i < 5; i++)
         {
-            if (Num == i) return;
+            if (Num == i) return; // 무한 방지
 
             while (GameManager.GM.Card_Type_Num[i] == GameManager.GM.Card_Type_Num[Num])
                 GameManager.GM.Card_Type_Num[Num] = Random.Range(0, 8);
