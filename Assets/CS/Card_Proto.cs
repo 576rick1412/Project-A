@@ -10,6 +10,10 @@ public class Card_Proto : MonoBehaviour
 
     [SerializeField] SpriteRenderer Icon_Object; // 아이콘이 들어갈 게임오브젝트
     [SerializeField] Sprite[] Icon; // 아이콘
+
+    // 게임오브젝트로 생성되서 UI 텍스트로 하기 힘들어졌기 때문에 스프라이트로 대체
+    [SerializeField] SpriteRenderer Text_Object; // 텍스트가 들어갈 게임오브젝트
+    [SerializeField] Sprite[] Text; // 텍스트
     private void Awake()
     {
 
@@ -17,6 +21,7 @@ public class Card_Proto : MonoBehaviour
     void Update()
     {
         Icon_Object.sprite = Icon[GameManager.GM.Card_Type_Num[Type_Num]];
+        Text_Object.sprite = Text[GameManager.GM.Card_Type_Num[Type_Num]];
 
         /*
         switch (GameManager.GM.Card_Type_Num[Type_Num])

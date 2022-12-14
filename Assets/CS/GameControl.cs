@@ -131,8 +131,8 @@ public class GameControl : MonoBehaviour
         if (Player_HP <= 0 && ZeroHP_UI) { ZeroHP_UI = false; return; }                 // 체력이 0일 경우, 실행 중단
 
         Round_Text.text = "Round : " + GameManager.GM.Now_Level;                        // 점수 텍스트 업데이트
-        Combine_Times.text = "" + Combine_num + " / " + GameManager.GM.Combine_times;   // 섞은 횟수 표시
-        Combine_Speed.text = "" +  GameManager.GM.Combine_Speed;                        // 섞은 횟수 표시
+        Combine_Times.text = "Times : " + Combine_num + " / " + GameManager.GM.Combine_times;   // 섞은 횟수 표시
+        Combine_Speed.text = "Speed : " +  GameManager.GM.Combine_Speed;                        // 섞은 횟수 표시
         for (int i = 2; i > Player_HP - 1; i--) Life_Star[i].SetActive(false);          // HP 표시
     }  // UI 업데이트
 
